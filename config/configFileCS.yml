@@ -1,0 +1,26 @@
+#Fichero de configuración del servicio de correlación
+
+#Zookeeper
+zookeeperURL: localhost:2181
+zookeeperGroup: log_management
+zookeeperSessionTimeout: 400
+zookeeperSyncTime: 200
+zookeeperCommitInterval: 1000
+zookeeperOffsetReset:smallest
+
+#Kafka
+kafkaBrokers: localhost:9092
+kafkaSerializer: kafka.serializer.StringEncoder
+kafkaACK: 1
+
+#Kafka Consumer
+consumerTopic: rb_vault
+
+
+#Kafka Producer
+producerTopic: rb_vault_post
+
+
+
+#REST
+RestURI: http://localhost:8888/CS/
