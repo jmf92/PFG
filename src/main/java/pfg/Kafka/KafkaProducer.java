@@ -28,16 +28,18 @@ public class KafkaProducer {
     private KeyedMessage<String, String> data;
     private Object[] JsonSchema;
     private ObjectMapper mapper;
+    private String topic;
 
 
-    public KafkaProducer() {
+    public KafkaProducer(String kafkabroker, String serializerProducer, String numberACKS, String producerTopic) {
 
+        this.topic = producerTopic;
         //Propiedades para poder conectar el productor a Kafka
         Properties props = new Properties();
-        props.put("metadata.broker.list", "localhost:9092");
-        props.put("serializer.class", "kafka.serializer.StringEncoder");
+        props.put("metadata.broker.list", kafkabroker);
+        props.put("serializer.class", serializerProducer);
         //props.put("partitioner", "example.producer.SimplePartitioner");
-        props.put("request.required.acks", "1");
+        props.put("request.required.acks", numberACKS);
 
         ProducerConfig config = new ProducerConfig(props);
 
@@ -65,7 +67,7 @@ public class KafkaProducer {
         log.info(mapper.writeValueAsString(HashJson));
 
         //Creamos el mensaje Kafka que será enviado
-        data = new KeyedMessage<String, String>("rb_vault_post", mapper.writeValueAsString(HashJson));
+        data = new KeyedMessage<String, String>(topic, mapper.writeValueAsString(HashJson));
 
 
         try {

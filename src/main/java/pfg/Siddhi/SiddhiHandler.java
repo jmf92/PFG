@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.wso2.siddhi.core.stream.input.InputHandler;
 import pfg.Kafka.KafkaConsumerManager;
 import pfg.Kafka.KafkaProducer;
-import pfg.KafkaSiddhiConnector;
 import pfg.Rest.RestListener;
 
 
@@ -29,14 +28,13 @@ public class SiddhiHandler implements RestListener{
     private KafkaConsumerManager consumer;
     private Siddhi siddhi;
     private InputHandler inputHandler;
-    private KafkaSiddhiConnector connector;
     private int threads = 1;
     private Map<String, Map<String, Object>> rawQueries = new HashMap<String, Map<String, Object>>();
     private boolean isRestart = false;
-    private boolean addResult = false;
     private boolean run = false;
 
     private ArrayList outStream;
+    private boolean update;
 
     public SiddhiHandler(KafkaConsumerManager kafkaConsumer, KafkaProducer kafkaProducer){
         this.producer = kafkaProducer;
@@ -44,21 +42,33 @@ public class SiddhiHandler implements RestListener{
         this.mapper = new ObjectMapper();
         this.outStream = new ArrayList();
         this.queries = "";
-        this.connector = KafkaSiddhiConnector.getInstance();
 
-        //Arrancamos el consumidor de Kafka que genera la entrada del motor
-        //startSiddhi();
-        //run();
+    }
 
+    public InputHandler getInputHandler() {
+        return inputHandler;
+    }
+    public boolean isRestart() {
+        return isRestart;
+    }
 
+    public void startSiddhi(){
+        //Preparamos e iniciamos el motor de correlación
+        siddhi = new Siddhi(InputStream, queries, producer);
+        siddhi.start(outStream);
+        inputHandler = siddhi.getInputHandler();
+
+        // Arrancamos, si no lo estaba ya, el consumidor de Kafka que
+        // será el encargado de generar las entradas del motor
+        if (!run)
+            run();
     }
 
     public void run(){
         this.run = true;
         try {
             //Obtenemos los logs del topic de kafka, que serán la entrada del motor
-            //log.info("Se inicia el consumo de la entrada con id{}", inputHandler.getStreamId() );
-            consumer.run(threads);
+            consumer.run(threads, this);
             Thread.sleep(10000);
         } catch (InterruptedException ie) {
             log.error(null, ie);
@@ -66,30 +76,6 @@ public class SiddhiHandler implements RestListener{
 
     }
 
-    public void startSiddhi(){
-        siddhi = new Siddhi(InputStream, queries, producer);
-        siddhi.start(outStream);
-        inputHandler = siddhi.getInputHandler();
-        connector.setInputHandler(inputHandler);
-
-        if (!run)
-            run();
-    }
-
-    public boolean isRestart() {
-        return isRestart;
-    }
-
-    public void setIsRestart(boolean isRestart) {
-        this.isRestart = isRestart;
-    }
-
-    public void start(String InputStream, String queries){
-
-        //Preparamos e iniciamos el motor de correlación
-        startSiddhi();
-
-    }
 
     public void stopSiddhi(){
         if(siddhi != null)
@@ -111,12 +97,18 @@ public class SiddhiHandler implements RestListener{
 
     }
 
+
+
+
     @Override
     public boolean restartExecutionPlan(String newInputStream) {
         Map<String, Object> inputStream;
         boolean result = false;
         try {
-
+            // Comprobamos que el string que define el stream de entrada
+            // no esté vacio.
+            // Si lo está es que no se quiere cambiar la definición del stream anterior
+            // Si no lo actualizamos.
             if(!newInputStream.isEmpty()) {
                 inputStream = mapper.readValue(newInputStream, Map.class);
                 InputStream="";
@@ -152,33 +144,30 @@ public class SiddhiHandler implements RestListener{
         //-Se comprueba si hay que actualizar las queries
         //-Paramos el plan ejecución anterior e iniciamos
         // el actualizado
-            log.debug("No hay reinicio");
+
             if(isRestart){
                 //Bajamos el flag de reinicios pendientes
                 isRestart = false;
                 log.info("Restart request is received");
 
 
-
-                //Comprobamos si hay queries pendientes de insertar
-                // en el plan de ejecución
-                if(addResult){
-                    log.info("Queries to add");
-                    updateQueries();
-                }
-
-
                 //Paramos el motor para su posterior reinicio
                 this.stopSiddhi();
                 log.info("Upgrade is starting...");
 
+                // Comprobamos si hay que actualizar los componentes del motor, asociados a las queries:
+                // +Queries
+                // +Stream salida
+                if (update)
+                    updateQueries();
+
                 log.info("Consumer:{}",consumer.toString());
                 log.info("Producer:{}", producer.toString());
-                log.info("Connector:{}", connector.toString());
-                this.start(InputStream, queries);
+
+                //Iniciamos el motor
+                this.startSiddhi();
                 log.info("Consumer:{}",consumer.toString());
                 log.info("Producer:{}", producer.toString());
-                log.info("Connector:{}", connector.toString());
                 log.info("Siddhi:{}", siddhi.toString());
             }
 
@@ -187,23 +176,23 @@ public class SiddhiHandler implements RestListener{
 
 
     public void updateQueries(){
-        log.info("Update request has been started");
+        log.info("Updating queries. . . ");
 
-       if(addResult)
-        {
-            //queries ="";
-            //Actualizamos el string que contiene las queries
-            for (Map.Entry entry :rawQueries.entrySet().iterator().next().getValue().entrySet()){
-
-
-                //queries.concat(rawQueries.get("query").toString());
-                log.info("Queries-key:{}", entry.getKey().toString());
-
-                log.info("Queries-value:{}", entry.getValue().toString());
-
+        // Si hay peticiones pendientes de inclusión/eliminación
+        // actualizamos el valor del string  que contiene las queries
+        // y el array que contiene los streams de salidas asociados a dichas queries.
+        if (update){
+            queries ="";
+            if(!outStream.isEmpty())
+                outStream.clear();
+            for( Object query : rawQueries.keySet().toArray()){
+                queries = queries + rawQueries.get(query).get("query").toString();
+                outStream.add(rawQueries.get(query).get("OutStream"));
             }
-            addResult = false;
+            update = false;
         }
+
+
     }
 
 
@@ -218,28 +207,26 @@ public class SiddhiHandler implements RestListener{
 
             String id = query.get("id").toString();
 
+            // Comprobamos que el identificador de query, y por tanto la query,
+            // no esté repetido
             if (rawQueries.containsKey(id)) {
                 log.error("Query with id {} already exist", id);
             } else {
 
+                // Si el stream de salida es válido, no está registrado aún,
+                // actualizamos las queries
                 if(!outStream.contains(query.get("OutStream"))){
                     result = true;
 
-                    queries= queries+ query.get("query").toString();
                     //Añadimos la query
                     rawQueries.put(id, query);
 
-                    //Añadimos el stream de salida asociado a la query para el posterior
-                    //lanzamiento de los callbacks asociados a dichos streams
-                    outStream.add(outStream.size(),query.get("OutStream"));
+                    // Subimos el flag de actualizaciones pendientes.
+                    if(!update)
+                        update = true;
 
-
-                    //Activamos el flag de queries pendientes de insertar
-                    if(!addResult)
-                        addResult = true;
-
-                    log.info(rawQueries.toString());
-                    log.info(queries);
+                    log.info("Current queries: {}", rawQueries.toString());
+                    log.info("Siddhi queries: {}", queries);
                     log.info("New query added: {}", query);
                 }
                 else
@@ -257,7 +244,15 @@ public class SiddhiHandler implements RestListener{
     public boolean remove(String id) {
         boolean removed = (rawQueries.remove(id) != null);
 
+
+        // Si ha sido eliminada con éxito, actualizamos las queries
+        // y el stream de salida asociado a ésta
         if (removed) {
+
+            // Subimos el flag de actualizaciones pendientes.
+            if(!update)
+                update = true;
+
             log.info("Query with the id {} has been removed", id);
             log.info("Current queries: {}", rawQueries);
         } else {

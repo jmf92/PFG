@@ -54,7 +54,7 @@ public class Resource {
      */
 
     @POST
-    @Path("/ExecPlan/update")
+    @Path("/ExecPlan/restart")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response restart(String newExecutionPlan) {
         RestListener listener = RestManager.getListener();

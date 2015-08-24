@@ -3,9 +3,8 @@ package pfg.Kafka;
 import kafka.consumer.ConsumerConfig;
 import kafka.consumer.KafkaStream;
 import kafka.javaapi.consumer.ConsumerConnector;
-import org.wso2.siddhi.core.stream.input.InputHandler;
+import pfg.CorrelationService;
 import pfg.Siddhi.SiddhiHandler;
-import pfg.Test;
 
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +23,7 @@ import java.util.logging.Logger;
  *
  * @author Jaime Márquez Fernández
  */
+
 public class KafkaConsumerManager {
     private ConsumerConnector consumer;
     private  ExecutorService executor;
@@ -34,22 +34,22 @@ public class KafkaConsumerManager {
     private String topic;
     private String kafkaBroker;
 
+
     private Object[] JsonSchema;
 
-    public KafkaConsumerManager(String a_zookeeper, String a_groupId, String a_topic, String a_kafkaBroker) {
+    public KafkaConsumerManager(String a_kafkaBroker,String a_kafkaSerializer,String a_kafkaAcks, String a_topic,
+                                String a_zookeeper, String a_groupId, String a_zookeeperTimeout,
+                                String a_zookeeperSyncTime, String a_zookeeperCommitInterval,
+                                String a_zookeeperOffsetReset) {
         this.zookeeper = a_zookeeper;
         this.groupId = a_groupId;
         this.topic = a_topic;
         this.kafkaBroker = a_kafkaBroker;
-
-
         consumer = kafka.consumer.Consumer.createJavaConsumerConnector(
-                createConsumerConfig(a_kafkaBroker, a_zookeeper, a_groupId ));
+                createConsumerConfig(a_kafkaBroker, a_kafkaSerializer, a_kafkaAcks,
+                        a_zookeeper, a_groupId, a_zookeeperTimeout, a_zookeeperSyncTime, a_zookeeperCommitInterval, a_zookeeperOffsetReset ));
 
-        /*this.topicCountMap = new HashMap<String, Integer>();
-        this.topicCountMap.put(topic, new Integer(1));
-        this.consumerMap = consumer.createMessageStreams(topicCountMap);
-        this.streams = consumerMap.get(topic);*/
+
     }
 
     public void shutdown() {
@@ -62,33 +62,25 @@ public class KafkaConsumerManager {
                         "Timed out waiting for consumer threads to shut down, exiting uncleanly");
             }
         } catch (InterruptedException e) {
-            Logger.getLogger(Test.class.getName()).log(Level.SEVERE,
+            Logger.getLogger(CorrelationService.class.getName()).log(Level.SEVERE,
                     "Interrupted during shutdown, exiting uncleanly",e);
         }
     }
-    /*
-    public void restartConsumer(int a_numThreads, InputHandler inputHandler){
 
-        shutdown();
-        consumer = kafka.consumer.Consumer.createJavaConsumerConnector(
-                createConsumerConfig(kafkaBroker, zookeeper, groupId ));
-        run(a_numThreads, inputHandler);
-    }*/
-
-    public void run(int a_numThreads) {
+    public void run(int a_numThreads, SiddhiHandler siddhiHandler) {
         Map<String, Integer> topicCountMap =new HashMap<String, Integer>();
         topicCountMap.put(topic, new Integer(a_numThreads));
         Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap = consumer.createMessageStreams(topicCountMap);
         List<KafkaStream<byte[], byte[]>> streams = consumerMap.get(topic);
 
 
-        // Creamos el manejador del hilo en el que se lanzara el consumidor
+        // Creamos el manejador del hilo en el que se lanzará el consumidor
         executor = Executors.newFixedThreadPool(a_numThreads);
 
         //Creamos un objeto encargado de consumir los mensajes
         int threadNumber = 0;
         for (final KafkaStream stream : streams) {
-            KafkaConsumer consumer = new KafkaConsumer(stream, threadNumber, this);
+            KafkaConsumer consumer = new KafkaConsumer(stream, threadNumber, this, siddhiHandler);
             executor.submit(consumer);
             setJsonSchema(consumer.getJsonSchema());
             threadNumber++;
@@ -106,22 +98,25 @@ public class KafkaConsumerManager {
         return this.JsonSchema;
     }
 
-    private static ConsumerConfig createConsumerConfig(String a_kafkaBroker, String a_zookeeper, String a_groupId) {
+    private static ConsumerConfig createConsumerConfig(String a_kafkaBroker,String a_kafkaSerializer,String a_kafkaAcks,
+                                                       String a_zookeeper, String a_groupId, String a_zookeeperTimeout,
+                                                       String a_zookeeperSyncTime, String a_zookeeperCommitInterval,
+                                                       String a_zookeeperOffsetReset) {
 
         Properties props = new Properties();
 
         //Propiedades kafka
         props.put("metadata.broker.list", a_kafkaBroker);
-        props.put("serializer.class", "kafka.serializer.StringEncoder");
-        props.put("request.required.acks", "1");
+        props.put("serializer.class", a_kafkaSerializer);
+        props.put("request.required.acks", a_kafkaAcks);
 
         //Propiedades zookeeper
         props.put("zookeeper.connect", a_zookeeper);
         props.put("group.id", a_groupId);
-        props.put("zookeeper.session.timeout.ms", "400");
-        props.put("zookeeper.sync.time.ms", "200");
-        props.put("auto.commit.interval.ms", "1000");
-        props.put("auto.offset.reset", "smallest");
+        props.put("zookeeper.session.timeout.ms", a_zookeeperTimeout);
+        props.put("zookeeper.sync.time.ms", a_zookeeperSyncTime);
+        props.put("auto.commit.interval.ms", a_zookeeperCommitInterval);
+        props.put("auto.offset.reset", a_zookeeperOffsetReset);
 
         return new ConsumerConfig(props);
     }

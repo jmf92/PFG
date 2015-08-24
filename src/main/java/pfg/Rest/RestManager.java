@@ -20,22 +20,19 @@ public class RestManager {
     private RestManager() {}
 
     /**
-     * Starts Grizzly HTTP server exposing JAX-RS resources defined in this application.
+     * Iniciamos el servidor HTTP Grizzly que ofrece los programas Java definidos en esta aplicación
      *
      */
-    public static void startServer(RestListener rl) {
-        // create a resource config that scans for JAX-RS resources and providers
-        // en el paquete pfg.Rest
+    public static void startServer(RestListener rl, String uri) {
+        //Creamos una configuración de fuentes que busca en el paquete pfg.Rest
+        //los proveedores de JAX-RS(servidor aplicaciones java)
         rc = new ResourceConfig().packages("pfg.Rest");
 
-
-
-        // Set the listener for the petitions
+        // Establecemos el "listener" para comunicar siddhi con la API REST
         listener = rl;
 
-        // create and start a new instance of grizzly http server
-        // exposing the Jersey application at BASE_URI
-        server = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), rc);
+        // Creamos e iniciamos una instancia del servidor que escuchará en la URI definida
+        server = GrizzlyHttpServerFactory.createHttpServer(URI.create(uri), rc);
         log.info("Starting server...");
     }
 

@@ -8,11 +8,9 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wso2.siddhi.core.stream.input.InputHandler;
-import pfg.KafkaSiddhiConnector;
 import pfg.Siddhi.SiddhiHandler;
 
 import java.util.Map;
-import java.util.logging.Level;
 
 /**
  * Esta clase se encarga de consumir los mensajes guardados en Apache Kafka
@@ -27,15 +25,14 @@ import java.util.logging.Level;
 public class KafkaConsumer implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumer.class);
 
+
     private KafkaStream m_stream;
     private int m_threadNumber;
     private InputHandler inputHandler;
     private Object[] JsonSchema;
     private Object[] JsonAttributes;
     private KafkaConsumerManager consumerGE;
-
-    private KafkaSiddhiConnector connector;
-
+    private SiddhiHandler siddhiHandler;
 
     public Object[] getJsonAttributes() {
         return JsonAttributes;
@@ -56,36 +53,23 @@ public class KafkaConsumer implements Runnable {
 
 
 
-    public KafkaConsumer(KafkaStream a_stream, int a_threadNumber, KafkaConsumerManager consumerGroupExample) {
+    public KafkaConsumer(KafkaStream a_stream, int a_threadNumber, KafkaConsumerManager consumerGroupExample, SiddhiHandler siddhiHandler) {
         this.m_threadNumber = a_threadNumber;
         this.m_stream = a_stream;
         this.consumerGE = consumerGroupExample;
-        this.connector = KafkaSiddhiConnector.getInstance();
-
+        this.siddhiHandler = siddhiHandler;
     }
 
     public void run() {
         ConsumerIterator<byte[], byte[]> it = m_stream.iterator();
         String linea;
 
-        log.info("El consumidor llega a arrancar{}",connector.toString());
-
-        //Mientras el motor no esté preparado no iniciamos el consumo de mensajes
-        while (connector.getInputHandler() == null){
-            log.info("Esperando que siddhi inicie");
-            try {
-                wait(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        log.info("Comienza el consumo de KAfka");
+        log.info("Kafka consumer is starting...");
         //Mientras el iterador indique que hay más elementos que leer
         //Seguiremos generando entradas en el motor
         while (it.hasNext()) {
 
-            log.info("Thread " + m_threadNumber + ": " + new String(it.next().message()));
+            log.info("Thread: {}\t Message consumed:{}", m_threadNumber, new String(it.next().message()));
 
             //Obtenemos la linea leida por el consumidor
             linea = new String(it.next().message());
@@ -110,14 +94,14 @@ public class KafkaConsumer implements Runnable {
 
 
 
-                //Comprobamos que el manejador esté listo
-                if(connector.getInputHandler() != null) {
+                //Comprobamos que el manejador de entrada del motor esté listo
+                if(siddhiHandler.getInputHandler() != null) {
 
-                    //Comprobamos que el manejador siga siendo el mismo
-                    if (inputHandler != connector.getInputHandler()){
+                    //Comprobamos si el manejador sigue siendo el mismo
+                    if (inputHandler != siddhiHandler.getInputHandler()){
 
                         //Obtenemos el manejador de entrada desde el conector a siddhi
-                        inputHandler = connector.getInputHandler();
+                        inputHandler = siddhiHandler.getInputHandler();
                     }
 
                     //Enviamos el valor de los atributos extraidos del objeto JSON al input de Siddhi

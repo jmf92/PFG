@@ -27,50 +27,13 @@ public class Siddhi {
 
 
     public Siddhi(String inputStream, String queries, KafkaProducer producer){
-        /*
-        //Configuración para el motor de correlación Siddhi
-        String executionPlan = "@config(async = 'true')define stream sshStream (" +
-                "message string,"+
-                "raw_message string,"+
-                "host string,"+
-                "fromhost string,"+
-                "fromhost_ip string,"+
-                "syslogtag string,"+
-                "program_name string," +
-                "pri string,"+
-                "pri_text string,"+
-                "iut string,"+
-                "syslogfacility string,"+
-                "syslogfacility_text string,"+
-                "syslogseverity string,"+
-                "syslogseverity_text string,"+
-                "syslogpriority string,"+
-                "syslogpriority_text string,"+
-                "timegenerated string,"+
-                "protocol_version string,"+
-                "structured_data string,"+
-                "app_name string,"+
-                "procid string,"+
-                "msgid string,"+
-                "inputname string,"+
-
-                "method string," +
-                "auth_method string," +
-                "user string,"+
-                "ip string,"+
-                "port string,"+
-                "protocol string" +
-                ");";
-
-
-        String q = "@info(name = 'query1') from sshStream[user == 'root'] select ip, port insert into Ou;";*/
 
         log.info("InputStream:{}\n Queries:{}\n", inputStream, queries);
 
         this.kafkaProducer = producer;
         this.siddhiManager = new SiddhiManager();
         this.executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(inputStream+queries);
-        //this.executionPlanRuntime = siddhiManager.createExecutionPlanRuntime(executionPlan+q);
+
     }
     public InputHandler getInputHandler(){
         return this.inputHandler;

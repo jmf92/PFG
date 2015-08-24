@@ -19,9 +19,9 @@ public class StartChecking implements Runnable {
     public void run(){
         if(siddhiHandler != null) {
             while (true) {
-                log.debug("Esperando peticiones de inicio/reinicio");
+                log.debug("Waiting request´s...");
                 if(siddhiHandler.isRestart()){
-                    log.info("Peticion reinicio recibida");
+                    log.info("Restart request was received");
                     siddhiHandler.restartSiddhi();
                 }
             }
