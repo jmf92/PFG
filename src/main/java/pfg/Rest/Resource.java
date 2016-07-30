@@ -22,7 +22,7 @@ public class Resource {
      */
 
     @POST
-    @Path("/add")
+    @Path("/action=add")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response addQuery(String json) {
         RestListener listener = RestManager.getListener();
@@ -37,12 +37,37 @@ public class Resource {
         }
     }
 
+    /**
+     * Este método maneja peticiones HTTP GET para la obtención de las queries definidas
+     * en el motor
+     *
+     * Utiliza una interfaz con el manejador del motor para comunicar dicha información.
+     *
+     *
+     * @return Respuesta HTTP con el código apropiado tras tratar la petición.
+     *
+     * @author Jaime Márquez Fernández
+     */
 
+    @GET
+    @Path("/queries")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response getQueries() {
+        RestListener listener = RestManager.getListener();
+
+        // Check if the listener accepted the data
+        if (listener == null) {
+            return Response.status(500).build();
+        }
+        else{
+            return Response.status(200).entity(listener.getQueries()+'\n').build();
+        }
+    }
 
 
     /**
      * Este metodo maneja las peticiones HTTP POST para
-     * actualizar el motor de correlación(formato JSON).
+     * iniciar el motor de correlación(formato JSON).
      *
      * Utiliza la interfaz con el manejador del motor para pasarle la información.
      *
@@ -54,7 +79,7 @@ public class Resource {
      */
 
     @POST
-    @Path("/ExecPlan/restart")
+    @Path("/action=start")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response restart(String newExecutionPlan) {
         RestListener listener = RestManager.getListener();
@@ -63,7 +88,7 @@ public class Resource {
         // Check if the listener accepted the data
         if (listener == null) {
             return Response.status(500).build();
-        } else if (listener.restartExecutionPlan(newExecutionPlan)) {
+        } else if (listener.startExecutionPlan(newExecutionPlan)) {
             return Response.status(200).entity(newExecutionPlan).build();
         } else {
             return Response.status(202).entity(newExecutionPlan).build();
@@ -78,10 +103,8 @@ public class Resource {
 
 
     /**
-     * This methods handles HTTP DELETE requests.
-     * It sends an remove operation to the listener passing it an ID.
-     * Este método maneja las peticiones HTTP DELETE utilizadas parar eliminar las queries
-     * aplicadas a un determinado plan de ejecución en el motor.
+     * Este método maneja las peticiones HTTP DELETE utilizadas parar eliminar la query con ID= " id"
+     * aplicada a un determinado plan de ejecución en el motor.
      *
      * @param id Se pasa como parámetro el identificador de la query que se desea eliminar
      *
@@ -89,8 +112,7 @@ public class Resource {
      */
 
     @DELETE
-    @Path("/delete/{id}")
-    @Consumes (MediaType.APPLICATION_JSON)
+    @Path("/action=delete/{id}")
     public Response removeQuery(@PathParam("id") String id) {
         RestListener listener = RestManager.getListener();
 

@@ -24,6 +24,7 @@ public class SiddhiHandler implements RestListener{
     private ObjectMapper mapper;
     private String queries;
     private String InputStream;
+    private String nameInputStream;
     private KafkaProducer producer;
     private KafkaConsumerManager consumer;
     private Siddhi siddhi;
@@ -48,6 +49,7 @@ public class SiddhiHandler implements RestListener{
     public InputHandler getInputHandler() {
         return inputHandler;
     }
+    public  String getQueries(){return rawQueries.toString(); }
     public boolean isRestart() {
         return isRestart;
     }
@@ -55,7 +57,7 @@ public class SiddhiHandler implements RestListener{
     public void startSiddhi(){
         //Preparamos e iniciamos el motor de correlación
         siddhi = new Siddhi(InputStream, queries, producer);
-        siddhi.start(outStream);
+        siddhi.start(nameInputStream, outStream);
         inputHandler = siddhi.getInputHandler();
 
         // Arrancamos, si no lo estaba ya, el consumidor de Kafka que
@@ -101,7 +103,7 @@ public class SiddhiHandler implements RestListener{
 
 
     @Override
-    public boolean restartExecutionPlan(String newInputStream) {
+    public boolean startExecutionPlan(String newInputStream) {
         Map<String, Object> inputStream;
         boolean result = false;
         try {
@@ -113,6 +115,7 @@ public class SiddhiHandler implements RestListener{
                 inputStream = mapper.readValue(newInputStream, Map.class);
                 InputStream="";
                 InputStream = inputStream.get("stream").toString();
+                nameInputStream = inputStream.get("name_stream").toString();
                 result = true;
 
                 log.info("String stream:{}", newInputStream);
@@ -148,7 +151,7 @@ public class SiddhiHandler implements RestListener{
             if(isRestart){
                 //Bajamos el flag de reinicios pendientes
                 isRestart = false;
-                log.info("Restart request is received");
+                log.info("Received Restart request");
 
 
                 //Paramos el motor para su posterior reinicio

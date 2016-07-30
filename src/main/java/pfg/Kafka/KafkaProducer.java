@@ -1,11 +1,6 @@
 package pfg.Kafka;
 
-/**
- * Esta clase tiene como función transformar la salida del motor de correlación
- * a mensajes Kafka
- *
- * @author Jaime Márquez Fernández
- */
+
 
 
 import java.io.IOException;
@@ -21,7 +16,12 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wso2.siddhi.core.event.Event;
-
+/**
+ * Esta clase tiene como función transformar la salida del motor de correlación
+ * a mensajes Kafka
+ *
+ * @author Jaime Márquez Fernández
+ */
 public class KafkaProducer {
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumer.class);
     private Producer producer;
@@ -76,7 +76,7 @@ public class KafkaProducer {
 
 
         }catch (KafkaException ke){
-            log.error( "Send kafka message is not completed", ke);
+            log.error( "Kafka's message sending is not completed", ke);
 
         }
 

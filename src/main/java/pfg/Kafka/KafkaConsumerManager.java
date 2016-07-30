@@ -80,9 +80,8 @@ public class KafkaConsumerManager {
         //Creamos un objeto encargado de consumir los mensajes
         int threadNumber = 0;
         for (final KafkaStream stream : streams) {
-            KafkaConsumer consumer = new KafkaConsumer(stream, threadNumber, this, siddhiHandler);
+            KafkaConsumer consumer = new KafkaConsumer(stream, threadNumber, siddhiHandler);
             executor.submit(consumer);
-            setJsonSchema(consumer.getJsonSchema());
             threadNumber++;
         }
     }

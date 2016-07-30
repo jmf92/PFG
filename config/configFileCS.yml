@@ -14,11 +14,11 @@ kafkaSerializer: kafka.serializer.StringEncoder
 kafkaACK: 1
 
 #Kafka Consumer
-consumerTopic: rb_vault
+consumerTopic: correlation_service
 
 
 #Kafka Producer
-producerTopic: rb_vault_post
+producerTopic: correlation_service_out
 
 
 

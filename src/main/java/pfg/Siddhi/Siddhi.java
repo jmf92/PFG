@@ -38,7 +38,7 @@ public class Siddhi {
     public InputHandler getInputHandler(){
         return this.inputHandler;
     }
-    public void start(ArrayList outStream){
+    public void start(String nameInputStream, ArrayList outStream){
 
         //Añadimos los callbacks
         //Creamos los callbacks para la salida generada por el motor
@@ -46,12 +46,12 @@ public class Siddhi {
 
 
         //Definimos el manejador de los eventos de entrada del motor
-        inputHandler = executionPlanRuntime.getInputHandler("sshStream");
-        log.info("Se genera el input handler");
+        inputHandler = executionPlanRuntime.getInputHandler(nameInputStream);
+        log.info("Generating input handler");
 
         //Ejecutamos el plan de ejecución
         executionPlanRuntime.start();
-        log.info("Se inicia el execPlanRun");
+        log.info("Starting execution Plan Runtime");
 
     }
     public void stop(){
@@ -77,7 +77,7 @@ public class Siddhi {
         executionPlanRuntime.addCallback(Stream, new StreamCallback() {
             @Override
             public void receive(Event[] inEvents) {
-                log.info("Se entra al callback{}", Stream);
+                log.info("Callback{} is working", Stream);
                 log.info("Producer{}", kafkaProducer.toString());
                 log.info("ExecPlanRunTime{}", executionPlanRuntime);
 

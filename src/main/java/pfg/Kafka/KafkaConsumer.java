@@ -25,38 +25,17 @@ import java.util.Map;
 public class KafkaConsumer implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumer.class);
 
-
     private KafkaStream m_stream;
     private int m_threadNumber;
     private InputHandler inputHandler;
     private Object[] JsonSchema;
     private Object[] JsonAttributes;
-    private KafkaConsumerManager consumerGE;
     private SiddhiHandler siddhiHandler;
 
-    public Object[] getJsonAttributes() {
-        return JsonAttributes;
-    }
 
-    public void setJsonAttributes(Object[] jsonAttributes) {
-        JsonAttributes = jsonAttributes;
-    }
-
-    public Object[] getJsonSchema() {
-        return this.JsonSchema;
-    }
-
-    public void setJsonSchema(Object[] jsonSchema) {
-        this.JsonSchema = jsonSchema;
-    }
-
-
-
-
-    public KafkaConsumer(KafkaStream a_stream, int a_threadNumber, KafkaConsumerManager consumerGroupExample, SiddhiHandler siddhiHandler) {
+    public KafkaConsumer(KafkaStream a_stream, int a_threadNumber, SiddhiHandler siddhiHandler) {
         this.m_threadNumber = a_threadNumber;
         this.m_stream = a_stream;
-        this.consumerGE = consumerGroupExample;
         this.siddhiHandler = siddhiHandler;
     }
 
@@ -69,10 +48,11 @@ public class KafkaConsumer implements Runnable {
         //Seguiremos generando entradas en el motor
         while (it.hasNext()) {
 
-            log.info("Thread: {}\t Message consumed:{}", m_threadNumber, new String(it.next().message()));
 
             //Obtenemos la linea leida por el consumidor
             linea = new String(it.next().message());
+            log.info("Thread: {}\t Message consumed:{}", m_threadNumber,linea);
+
             ObjectMapper mapper = new ObjectMapper();
 
 
@@ -109,9 +89,6 @@ public class KafkaConsumer implements Runnable {
                 }
                 else
                     log.error("Siddhi input is out of service");
-                //Conservamos el esquema JSON para su posterior recuperación
-                consumerGE.setJsonSchema(JsonSchema);
-
 
             } catch (Exception ie) {
                 log.error(null, ie);
