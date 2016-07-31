@@ -67,7 +67,7 @@ public class Resource {
 
     /**
      * Este metodo maneja las peticiones HTTP POST para
-     * iniciar el motor de correlación(formato JSON).
+     * iniciar el motor de correlación.
      *
      * Utiliza la interfaz con el manejador del motor para pasarle la información.
      *
@@ -81,7 +81,7 @@ public class Resource {
     @POST
     @Path("/action=start")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response restart(String newExecutionPlan) {
+    public Response start(String newExecutionPlan) {
         RestListener listener = RestManager.getListener();
 
 
@@ -91,7 +91,7 @@ public class Resource {
         } else if (listener.startExecutionPlan(newExecutionPlan)) {
             return Response.status(200).entity(newExecutionPlan).build();
         } else {
-            return Response.status(202).entity(newExecutionPlan).build();
+            return Response.status(202).entity("Execution plan is not defined yet\n").build();
         }
     }
 
@@ -112,7 +112,7 @@ public class Resource {
      */
 
     @DELETE
-    @Path("/action=delete/{id}")
+    @Path("/action=delete/query/{id}")
     public Response removeQuery(@PathParam("id") String id) {
         RestListener listener = RestManager.getListener();
 

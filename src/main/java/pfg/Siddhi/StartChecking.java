@@ -12,7 +12,7 @@ public class StartChecking implements Runnable {
     private SiddhiHandler siddhiHandler;
 
     public StartChecking(SiddhiHandler siddhiHandler){
-        log.info("Thread(StartChecking) is waiting restart request...");
+        log.info("Thread(StartChecking) is waiting start request...");
         this.siddhiHandler = siddhiHandler;
     }
 
@@ -21,9 +21,9 @@ public class StartChecking implements Runnable {
         if(siddhiHandler != null) {
             while (true) {
                 log.debug("Waiting requests...");
-                if(siddhiHandler.isRestart()){
+                if(siddhiHandler.isStart()){
                     log.info("Restart request was received");
-                    siddhiHandler.restartSiddhi();
+                    siddhiHandler.start();
                 }
             }
         }

@@ -31,7 +31,7 @@ public class SiddhiHandler implements RestListener{
     private InputHandler inputHandler;
     private int threads = 1;
     private Map<String, Map<String, Object>> rawQueries = new HashMap<String, Map<String, Object>>();
-    private boolean isRestart = false;
+    private boolean isStart = false;
     private boolean run = false;
 
     private ArrayList outStream;
@@ -42,6 +42,7 @@ public class SiddhiHandler implements RestListener{
         this.consumer = kafkaConsumer;
         this.mapper = new ObjectMapper();
         this.outStream = new ArrayList();
+        this.InputStream = "";
         this.queries = "";
 
     }
@@ -50,8 +51,8 @@ public class SiddhiHandler implements RestListener{
         return inputHandler;
     }
     public  String getQueries(){return rawQueries.toString(); }
-    public boolean isRestart() {
-        return isRestart;
+    public boolean isStart() {
+        return isStart;
     }
 
     public void startSiddhi(){
@@ -107,29 +108,29 @@ public class SiddhiHandler implements RestListener{
         Map<String, Object> inputStream;
         boolean result = false;
         try {
-            // Comprobamos que el string que define el stream de entrada
-            // no esté vacio.
-            // Si lo está es que no se quiere cambiar la definición del stream anterior
-            // Si no lo actualizamos.
+
+            //Si el stream de entrada no está vacio: se inicializa un nuevo stream.
+            //Si está vacío y hay una definición previa guardada: se reinicia el plan anterior.
+            //Sino: retornamos falso que indica que no hay ningun plan que poner en marcha
             if(!newInputStream.isEmpty()) {
                 inputStream = mapper.readValue(newInputStream, Map.class);
                 InputStream="";
                 InputStream = inputStream.get("stream").toString();
                 nameInputStream = inputStream.get("name_stream").toString();
+                isStart = true;
                 result = true;
 
+                log.info("Restart is upload");
                 log.info("String stream:{}", newInputStream);
                 log.info("Input:{}", InputStream);
                 log.info("Queries:{}", queries);
+            }else if (!InputStream.isEmpty()){
+                result = true;
+                isStart = true;
+                log.info("Restart is upload");
+            }else{
+                result = false;
             }
-
-            //Si no está activo el flag de reinicio lo activamos
-            if(!isRestart)
-                isRestart = true;
-
-            log.info("Restart is upload");
-
-
 
 
          } catch (IOException e) {
@@ -142,15 +143,15 @@ public class SiddhiHandler implements RestListener{
     }
 
 
-    public void restartSiddhi(){
-        //Si hay peticiones de reinicio:
+    public void start(){
+        //Si hay peticiones de carga de un nuevo plan o reinicio del anterior:
         //-Se comprueba si hay que actualizar las queries
         //-Paramos el plan ejecución anterior e iniciamos
         // el actualizado
 
-            if(isRestart){
+            if(isStart){
                 //Bajamos el flag de reinicios pendientes
-                isRestart = false;
+                isStart = false;
                 log.info("Received Restart request");
 
 

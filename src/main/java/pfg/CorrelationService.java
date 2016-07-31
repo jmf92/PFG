@@ -81,7 +81,7 @@ public class CorrelationService {
             RestManager.startServer(siddhiHandler, configMap.get("RestURI").toString());
 
 
-            //Iniciamos el hilo que comprobará las peticiones de reinicio
+            //Iniciamos el hilo que comprobará las peticiones de inicio
             startChecking.run();
 
             //Iniciamos el motor de correlación
